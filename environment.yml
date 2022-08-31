@@ -1,0 +1,14 @@
+name: pia
+channels:
+  - defaults
+dependencies:
+  - python=3.9
+  - notebook
+  - seaborn
+  - tqdm
+  - ipywidgets
+  - numpy
+  - pandas
+  - pip
+  - pip:
+    - propinfer

@@ -10,3 +10,7 @@ dependencies:
   - numpy
   - pandas
   - pip
+  - numpy<1.23
+  - scikit-learn
+  - pip:
+      - hydra-core

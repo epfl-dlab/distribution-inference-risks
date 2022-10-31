@@ -58,9 +58,9 @@ class IRM(pia.MLP):
         
         for _, env in df.groupby(self.env):
             env = env.drop(self.env, axis=1)
-            X, y = self._prepare_data(env, train=False)
+            X, y = self._prepare_data(env, train=train)
             X = torch.tensor(X.values.astype(np.float32), device=self.device)
-            y = torch.tensor(y.values.astype(np.int64 if not regression else np.float32), device=self.device).view(-1, 1)
+            y = torch.tensor(y.values.astype(np.int64 if not regression else np.float32), device=self.device)
             
             envs.append((X, y))
 
@@ -75,13 +75,14 @@ class IRM(pia.MLP):
         environments = self._prepare_dataloader(data)
 
         opt = torch.optim.SGD(self.model.parameters(), lr=self.lr, weight_decay=self.wd)
-        criterion = nn.CrossEntropyLoss() if self.n_classes > 1 else nn.MSELoss(reduction='none')
+        criterion = nn.CrossEntropyLoss(reduction='none') if self.n_classes > 1 else nn.MSELoss(reduction='none')
 
         for epoch in range(self.epochs):
             penalty = 0
             error = 0
             
             for X, y_true in environments:
+                y_true = y_true.view(-1, 1) if self.n_classes == 1 else y_true.flatten()
                 p = torch.randperm(len(X))
                 error_e = criterion(self.model(X[p]) * self.w, y_true[p])
                 penalty += self.__compute_penalty(error_e)
@@ -95,8 +96,8 @@ class IRM(pia.MLP):
 
     def predict_proba(self, data):
         X, _ = self._prepare_data(data, train=False)
-        if 'env' in X.columns:
-            X = X.drop('env', axis=1)
+        if self.env in X.columns:
+            X = X.drop(self.env, axis=1)
         X = torch.tensor(X.values.astype(np.float32), device=self.device)
 
         return np.nan_to_num((self.model(X) * self.w).detach().cpu().numpy())
